@@ -1,0 +1,1 @@
+<img src="{{ asset('build/assets/logo-unifil.png') }}" alt="Logo Unifil" class="img-fluid rounded-circle rounded-5 bg-white border border-warning" width="70">
