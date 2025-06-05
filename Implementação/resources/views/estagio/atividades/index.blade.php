@@ -38,6 +38,7 @@
                                 <tr>
                                     <th>Título</th>
                                     <th>Turma</th>
+                                    <th>Peso</th> <!-- NOVO -->
                                     <th>Notas</th>
                                     <th class="text-center"></th>
                                 </tr>
@@ -47,6 +48,7 @@
                                 <tr>
                                     <td>{{ $atividade->titulo }}</td>
                                     <td>{{ $atividade->turma->nome_turma }}</td>
+                                    <td>{{ $atividade->peso ?? 'N/A' }}</td> <!-- NOVO -->
                                     <td>
                                         <a href="{{ route('atividades.notas', $atividade->id) }}" class="btn btn-primary btn-sm">
                                             Atribuir Notas

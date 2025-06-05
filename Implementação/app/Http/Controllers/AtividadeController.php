@@ -32,10 +32,14 @@ class AtividadeController extends Controller
         $request->validate([
             'turma_id' => 'required|exists:turmas,id',
             'titulo' => 'required|string|max:255',
-            'descricao' => 'string|max:255',
+            'descricao' => 'string|max:255|nullable',
+            'peso' => 'required|integer|min:0|max:100',
         ]);
 
-        $atividade = Atividade::create($request->all());
+        $data = $request->all();
+        $data['peso'] = intval($request->input('peso')); // garante inteiro
+
+        $atividade = Atividade::create($data);
 
         $alunos = Aluno::where('turma_id', $request->turma_id)->get();
         foreach ($alunos as $aluno) {
@@ -52,7 +56,7 @@ class AtividadeController extends Controller
     public function edit($id)
     {
         $atividade = Atividade::findOrFail($id);
-        $turmas = \App\Models\Turma::all(); // Buscar todas as turmas para edição
+        $turmas = Turma::all();
 
         return view('estagio.atividades.edit', compact('atividade', 'turmas'));
     }
@@ -62,11 +66,14 @@ class AtividadeController extends Controller
         $request->validate([
             'turma_id' => 'required|exists:turmas,id',
             'titulo' => 'required|string|max:255',
-            'descricao' => 'string|max:255',
+            'descricao' => 'string|max:255|nullable',
+            'peso' => 'required|integer|min:0|max:100',
         ]);
 
         $atividade = Atividade::findOrFail($id);
-        $atividade->update($request->all());
+        $data = $request->all();
+        $data['peso'] = intval($request->input('peso')); // força inteiro
+        $atividade->update($data);
 
         return redirect()->route('atividades.index')->with('success', 'Atividade atualizada com sucesso!');
     }
@@ -99,20 +106,31 @@ class AtividadeController extends Controller
 
     public function salvarNotas(Request $request, $id)
     {
+        $request->validate([
+            'peso_atividade' => 'required|integer|min:0|max:100',
+            'alunos' => 'required|array',
+            'alunos.*' => 'required|numeric|min:0|max:100',
+        ]);
+
         $atividade = Atividade::findOrFail($id);
 
-        foreach ($request->alunos as $aluno_id => $nota) {
-            \App\Models\Nota::updateOrCreate(
+        // Atualiza o peso da atividade (inteiro)
+        $atividade->peso = intval($request->input('peso_atividade'));
+        $atividade->save();
+
+        // Atualiza as notas dos alunos
+        foreach ($request->input('alunos') as $aluno_id => $nota) {
+            Nota::updateOrCreate(
                 [
-                    'atividade_id' => $atividade->id, 
-                    'aluno_id' => $aluno_id
+                    'atividade_id' => $atividade->id,
+                    'aluno_id' => $aluno_id,
                 ],
                 [
-                    'nota' => $nota
+                    'nota' => $nota,
                 ]
             );
         }
 
-        return redirect()->route('atividades.index')->with('success', 'Notas salvas/atualizadas com sucesso!');
+        return redirect()->route('atividades.index')->with('success', 'Notas e peso da atividade atualizados com sucesso!');
     }
 }

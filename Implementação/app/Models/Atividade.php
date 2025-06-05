@@ -13,7 +13,8 @@ class Atividade extends Model
     protected $fillable = [
         'titulo', 
         'descricao', 
-        'turma_id'
+        'turma_id',
+        'peso'
     ];
 
     public function turma()

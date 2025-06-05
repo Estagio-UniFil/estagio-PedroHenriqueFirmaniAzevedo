@@ -3,59 +3,40 @@
 @section('title', 'Editar Atividade')
 
 @section('content')
+<div class="container mt-4">
+    <h1>Editar Atividade</h1>
+    <form action="{{ route('atividades.update', $atividade->id) }}" method="POST">
+        @csrf
+        @method('PUT')
 
-@if (auth()->check() && auth()->user()->role !== 'aluno')
-<div class="container">
-    <div class="row mt-3">
-        <div class="col-md-2">
-            <div class="list-group">
-            </div>
+        <div class="form-group">
+            <label for="titulo">Título</label>
+            <input type="text" name="titulo" class="form-control" value="{{ $atividade->titulo }}" required>
         </div>
-        <div class="col-md-10">
-            <div class="card">
-                <div class="card-header">Editar Atividade</div>
-                <div class="card-body">
-                    @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul>
-                            @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                    @endif
 
-                    <form action="{{ route('atividades.update', $atividade->id) }}" method="POST">
-                        @csrf
-                        @method('PUT')
-                        <div class="mb-3">
-                            <label for="turma_id" class="form-label">Turma*</label>
-                            <select name="turma_id" class="form-control" id="turma_id">
-                                @foreach($turmas as $turma)
-                                    <option value="{{ $turma->id }}"
-                                            {{ $atividade->turma_id == $turma->id ? 'selected' : '' }}>
-                                        {{ $turma->nome_turma }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="titulo" class="form-label">Titulo*</label>
-                            <input type="text" name="titulo" class="form-control" id="titulo" value="{{ old('titulo', $atividade->titulo) }}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="descricao">Descrição</label>
-                            <textarea name="descricao" class="form-control" id="descricao">{{ old('descricao', $atividade->descricao) }}</textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
-                        <a href="{{ route('atividades.index') }}" class="btn btn-danger">Cancelar</a>
-                    </form>
-                </div>
-            </div>
+        <div class="form-group">
+            <label for="descricao">Descrição</label>
+            <textarea name="descricao" class="form-control">{{ $atividade->descricao }}</textarea>
         </div>
-    </div>
+
+        <div class="form-group">
+            <label for="turma_id">Turma</label>
+            <select name="turma_id" class="form-control" required>
+                @foreach($turmas as $turma)
+                    <option value="{{ $turma->id }}" {{ $atividade->turma_id == $turma->id ? 'selected' : '' }}>
+                        {{ $turma->nome_turma }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="peso">Peso da Atividade</label>
+            <input type="number" name="peso" class="form-control" step="1" min="0" max="100" value="{{ $atividade->peso }}" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-2">Atualizar</button>
+        <a href="{{ route('atividades.index') }}" class="btn btn-secondary mt-2">Cancelar</a>
+    </form>
 </div>
-@else
-<h1 class="text-center" style="color: red;">Sai daqui manézinho</h1>
-@endif
 @endsection

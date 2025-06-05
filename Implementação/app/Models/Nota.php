@@ -12,7 +12,8 @@ class Nota extends Model
     protected $fillable = [
         'atividade_id',
         'aluno_id', 
-        'nota'
+        'nota',
+        'peso'
     ];
 
     public function atividade()
