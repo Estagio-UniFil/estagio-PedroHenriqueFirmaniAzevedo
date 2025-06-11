@@ -107,10 +107,11 @@ class AtividadeController extends Controller
     public function salvarNotas(Request $request, $id)
     {
         $request->validate([
-            'peso_atividade' => 'required|integer|min:0|max:100',
+            'peso_atividade' => 'nullable|integer|min:0|max:100',
             'alunos' => 'required|array',
             'alunos.*' => 'required|numeric|min:0|max:100',
         ]);
+
 
         $atividade = Atividade::findOrFail($id);
 

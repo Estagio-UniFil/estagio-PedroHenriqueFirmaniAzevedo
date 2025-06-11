@@ -13,7 +13,7 @@
                     <h1>Notas para Turma {{ $atividade->turma->nome_turma }}: {{ $atividade->titulo }}</h1>
                     <div>
                         <label for="pesoAtividade" class="me-2 fw-bold">Peso da Atividade:</label>
-                        <input type="number" name="peso_atividade" id="pesoAtividade" min="0" max="100" value="{{ $atividade->peso ?? 0 }}" class="form-control d-inline-block" style="width: 80px;" form="formNotas" step="1" required>
+                        <input type="number" name="peso_atividade" id="pesoAtividade" min="0" max="100" value="{{ $atividade->peso ?? '' }}" class="form-control d-inline-block" style="width: 80px;" form="formNotas" step="1">
                     </div>
                 </div>
                 <div class="card-body">
