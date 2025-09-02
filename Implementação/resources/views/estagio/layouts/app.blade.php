@@ -136,7 +136,7 @@
             ☰
         </button>
         <div class="navbar-brand">
-            <img src="{{ asset('build/assets/logo-unifil.png') }}" alt="Logo">
+            <img src="{{ asset('storage/logo-unifil.png') }}" alt="Logo">
             <span style="font-family: Afacad Flux;">ComPensa</span>
         </div>
     </nav>
@@ -158,6 +158,10 @@
         <a href="{{ route('presencas.index') }}">Presença</a>
         <hr>
         <a href="{{ route('atividades.index') }}">Atividades</a>
+        <hr>
+        <a href="{{ route('import.export') }}">Importar/Exportar</a>
+        <hr>
+        <a href="{{ route('graficos.index') }}">Gráficos</a>
         <hr>
         @endif
 

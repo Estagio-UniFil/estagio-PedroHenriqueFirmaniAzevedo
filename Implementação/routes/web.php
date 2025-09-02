@@ -9,6 +9,7 @@ use App\Http\Controllers\EscolaController;
 use App\Http\Controllers\PresencaController;
 use App\Http\Controllers\AtividadeController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GraficoController;
 
 Route::get('/', function () {
     return redirect('login');
@@ -62,5 +63,15 @@ Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.ed
 Route::post('/users', [UserController::class, 'store'])->name('users.store');
 Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
 Route::get('/users', [UserController::class, 'index'])->name('users.index');
+
+// Importação e Exportação
+Route::middleware('auth')->get('/import-export', function () {
+    return view('estagio.importarExportar.import_export');
+})->name('import.export');
+
+// Rotas para Gráficos
+Route::middleware(['auth'])->group(function () {
+    Route::get('/graficos', [App\Http\Controllers\GraficoController::class, 'index'])->name('graficos.index');
+});
 
 require __DIR__ . '/auth.php';

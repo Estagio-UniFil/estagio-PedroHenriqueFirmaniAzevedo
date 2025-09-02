@@ -31,6 +31,7 @@
         </div>
 
         <div class="form-group">
+            <!--Adicione o campo de peso da atividade aqui para mudar caso queira editar a atividade-->
             <label for="peso">Peso da Atividade</label>
             <input type="number" name="peso" class="form-control" step="1" min="0" max="100" value="{{ $atividade->peso }}" required>
         </div>

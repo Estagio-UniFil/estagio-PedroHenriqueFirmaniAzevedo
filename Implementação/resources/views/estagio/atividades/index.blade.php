@@ -38,7 +38,8 @@
                                 <tr>
                                     <th>Título</th>
                                     <th>Turma</th>
-                                    <th>Peso</th> <!-- NOVO -->
+                                    <!-- Adicione a coluna de Peso aqui para ver o peso de cada atividade na lista-->
+                                    <th>Peso</th>
                                     <th>Notas</th>
                                     <th class="text-center"></th>
                                 </tr>

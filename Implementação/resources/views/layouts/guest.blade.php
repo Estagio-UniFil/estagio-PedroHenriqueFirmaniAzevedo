@@ -16,9 +16,10 @@
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0" style="background-color: #F29400;">
+
             <div>
                 <a href="/">
-                    <x-application-unifil-logo class="w-20 h-20 fill-current rounded-full" />
+                    <img src="{{ asset('storage/logo-unifil.png') }}" alt="Logo Unifil" class="w-32 h-32 rounded-full border-4 border-white shadow-lg">
                 </a>
             </div>
 
