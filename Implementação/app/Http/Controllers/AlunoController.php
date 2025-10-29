@@ -36,17 +36,16 @@ class AlunoController extends Controller
     {
         $request->validate([
             'nome_aluno' => 'required|string|max:255',
-            'escola_id' => 'nullable|string|max:255',
+            'escola_id' => 'nullable|exists:escolas,id',
             'turma_id' => 'required|exists:turmas,id',
-            'email' => 'required|email',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8',
-            'role' => 'aluno',
         ]);
 
         $user = User::create([
             'name' => $request->nome_aluno,
             'email' => $request->email,
-            'password' => bcrypt($request->password), // Hash a senha
+            'password' => bcrypt($request->password),
             'role' => 'aluno',
         ]);
 
@@ -55,9 +54,6 @@ class AlunoController extends Controller
             'nome_aluno' => $request->nome_aluno,
             'escola_id' => $request->escola_id,
             'turma_id' => $request->turma_id,
-            'email' => $request->email,
-            'password' => $request->password,
-            'role' => 'aluno',
         ]);
 
         return redirect()->route('alunos.index')->with('success', 'Aluno criado com sucesso!');
@@ -103,13 +99,16 @@ class AlunoController extends Controller
 
     public function notas_aluno()
     {
-        $alunoId = auth()->id() - 1;
+        $user = Auth::user();
+        $aluno = Aluno::where('user_id', $user->id)->first();
 
-        $atividades = Atividade::whereHas('turma.alunos', function ($query) use ($alunoId) {
-            $query->where('alunos.id', $alunoId);
-        })
-            ->with(['notas' => function ($query) use ($alunoId) {
-                $query->where('aluno_id', $alunoId);
+        if (!$aluno) {
+            abort(404, 'Aluno não encontrado.');
+        }
+
+        $atividades = Atividade::where('turma_id', $aluno->turma_id)
+            ->with(['notas' => function ($query) use ($aluno) {
+                $query->where('aluno_id', $aluno->id);
             }])
             ->get();
 

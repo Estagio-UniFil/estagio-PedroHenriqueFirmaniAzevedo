@@ -46,6 +46,9 @@
         .navbar-brand {
             display: flex;
             align-items: center;
+             margin-left: auto;
+             margin-right: auto;
+             padding-left: 50px;
         }
 
         .navbar-brand img {
@@ -81,7 +84,7 @@
             white-space: nowrap;
         }
 
-        .sidebar a:hover {
+        .sidebar a:hover, .sidebar a.active {
             background-color: #F29400;
         }
 
@@ -89,6 +92,7 @@
             margin-left: 0;
             padding: 20px;
             transition: margin-left 0.3s ease-in-out;
+            min-height: calc(100vh - 60px);
         }
 
         .content.shifted {
@@ -99,10 +103,29 @@
             .sidebar {
                 width: 100%;
                 height: auto;
+                position: fixed;
+                top: 60px;
+                left: 0;
+                transform: translateX(-100%);
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+                height: calc(100vh - 60px);
+            }
+
+             .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .content {
+                margin-left: 0 !important;
             }
 
             .content.shifted {
-                margin-left: 0;
+                 margin-left: 0 !important;
+            }
+
+             .navbar-brand {
+                 padding-left: 0;
             }
 
             .navbar {
@@ -118,6 +141,12 @@
             }
         }
 
+        @media (min-width: 769px) {
+             .content.shifted {
+                margin-left: 250px;
+            }
+        }
+
         @media (max-width: 576px) {
             .navbar-brand img {
                 max-height: 25px;
@@ -127,6 +156,13 @@
                 font-size: 14px;
             }
         }
+
+         .dropdown-item {
+             color: black !important;
+        }
+         .dropdown-item:hover {
+            background-color: #e9ecef;
+         }
     </style>
 </head>
 
@@ -143,33 +179,40 @@
 
     <div class="sidebar" id="sidebar">
         <div class="d-flex align-items-center mb-4 mt-4">
-
+             <span class="text-white ms-2">{{ Auth::user()->name }}</span>
         </div>
         <hr>
         @if (auth()->check() && auth()->user()->role !== 'aluno')
-        <a href="{{ route('turmas.index') }}">Turmas</a>
+        <a href="{{ route('dashboard.inicial') }}" class="{{ request()->routeIs('dashboard.inicial') ? 'active' : '' }}">Dashboard</a>
         <hr>
-        <a href="{{ route('alunos.index') }}">Alunos</a>
+        <a href="{{ route('turmas.index') }}" class="{{ request()->routeIs('turmas.*') ? 'active' : '' }}">Turmas</a>
         <hr>
-        <a href="{{ route('monitores.index') }}">Monitores</a>
+        <a href="{{ route('alunos.index') }}" class="{{ request()->routeIs('alunos.*') ? 'active' : '' }}">Alunos</a>
         <hr>
-        <a href="{{ route('escolas.index') }}">Escola</a>
+        <a href="{{ route('monitores.index') }}" class="{{ request()->routeIs('monitores.*') ? 'active' : '' }}">Monitores</a>
         <hr>
-        <a href="{{ route('presencas.index') }}">Presença</a>
+        <a href="{{ route('escolas.index') }}" class="{{ request()->routeIs('escolas.*') ? 'active' : '' }}">Escola</a>
         <hr>
-        <a href="{{ route('atividades.index') }}">Atividades</a>
+        <a href="{{ route('presencas.index') }}" class="{{ request()->routeIs('presencas.*') ? 'active' : '' }}">Presença</a>
         <hr>
-        <a href="{{ route('import.export') }}">Importar/Exportar</a>
+        <a href="{{ route('atividades.index') }}" class="{{ request()->routeIs('atividades.*') ? 'active' : '' }}">Atividades</a>
         <hr>
-        <a href="{{ route('graficos.index') }}">Gráficos</a>
+        <a href="{{ route('import.export') }}" class="{{ request()->routeIs('import.export') ? 'active' : '' }}">Importar/Exportar</a>
         <hr>
+        <a href="{{ route('graficos.index') }}" class="{{ request()->routeIs('graficos.*') ? 'active' : '' }}">Gráficos</a>
+        <hr>
+        @endif
+
+        @if (auth()->check() && auth()->user()->role === 'aluno')
+            <a href="{{ route('aluno.notas') }}" class="{{ request()->routeIs('aluno.notas') ? 'active' : '' }}">Minhas Notas</a>
+             <hr>
         @endif
 
         @if (auth()->check())
         <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
             @csrf
         </form>
-        <a href="#" class="btn btn-danger" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Sair</a>
+        <a href="#" class="btn btn-danger mt-3" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Sair</a>
         @endif
     </div>
 
@@ -178,16 +221,39 @@
             @yield('content')
         </main>
     </div>
+    @else
+     <div class="container">
+         <div class="alert alert-danger mt-5" role="alert">
+             Você precisa estar logado para acessar esta página. <a href="{{ route('login') }}">Fazer Login</a>
+         </div>
+     </div>
     @endif
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
     <script>
         document.getElementById('navbar-toggler').addEventListener('click', function() {
             var sidebar = document.getElementById('sidebar');
             var content = document.getElementById('content');
             sidebar.classList.toggle('open');
-            content.classList.toggle('shifted');
+
+            if (window.innerWidth > 768) {
+                 content.classList.toggle('shifted');
+             }
         });
+
+         window.addEventListener('resize', function() {
+             var sidebar = document.getElementById('sidebar');
+             var content = document.getElementById('content');
+             if (window.innerWidth <= 768) {
+                 content.classList.remove('shifted');
+             } else {
+                 if (sidebar.classList.contains('open')) {
+                     content.classList.add('shifted');
+                 } else {
+                     content.classList.remove('shifted');
+                 }
+             }
+         });
     </script>
 </body>
 

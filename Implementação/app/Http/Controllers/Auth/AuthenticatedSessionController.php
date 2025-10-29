@@ -30,7 +30,7 @@ class AuthenticatedSessionController extends Controller
             if ($user->role === 'aluno') {
                 return redirect()->route('aluno.notas');
             } elseif ($user->role === 'instrutor') {
-                return redirect()->route('turmas.index');
+                return redirect()->route('dashboard.inicial');
             }
 
             Auth::logout();
@@ -40,9 +40,6 @@ class AuthenticatedSessionController extends Controller
         return back()->withErrors(['email' => 'As credenciais fornecidas estão incorretas.']);
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();

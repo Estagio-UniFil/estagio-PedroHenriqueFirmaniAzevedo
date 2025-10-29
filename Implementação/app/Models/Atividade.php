@@ -26,4 +26,9 @@ class Atividade extends Model
     {
         return $this->hasMany(Nota::class);
     }
+    
+    public function presenca()
+    {
+        return $this->hasOneThrough(Presenca::class, Turma::class, 'id', 'turma_id', 'turma_id', 'id');
+    }
 }

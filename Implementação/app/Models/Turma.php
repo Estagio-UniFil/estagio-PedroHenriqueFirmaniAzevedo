@@ -19,6 +19,8 @@ class Turma extends Model
         'dia_semana',
         'quantidade_alunos',
         'laboratorio',
+        'minimo_presenca',
+        'minimo_nota',
     ];
 
     protected $dates = ['deleted_at'];

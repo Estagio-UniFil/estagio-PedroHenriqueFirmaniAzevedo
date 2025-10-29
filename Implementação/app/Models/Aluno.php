@@ -15,6 +15,7 @@ class Aluno extends Model
         'nome_aluno',
         'escola_id',
         'turma_id',
+        'user_id',
     ];
 
     public function turma()
@@ -30,5 +31,10 @@ class Aluno extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function notas()
+    {
+        return $this->hasMany(Nota::class);
     }
 }

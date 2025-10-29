@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\PresencaExport;
 use App\Models\Presenca;
 use App\Models\Turma;
 use App\Models\PresencaAluno;
 use App\Models\PresencaMonitor;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class PresencaController extends Controller
 {
@@ -18,19 +18,40 @@ class PresencaController extends Controller
 
         $presencas = Presenca::with('turma')
             ->when($search, function ($query, $search) {
-                return $query->whereHas('turma', function ($q) use ($search) {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $search)) {
+                     return $query->where('data', $search);
+                }
+                 return $query->whereHas('turma', function ($q) use ($search) {
                     $q->where('nome_turma', 'like', "%{$search}%");
-                })->orWhere('data', 'like', "%{$search}%");
+                });
             })
             ->orderBy('data', 'desc')
             ->get();
+
+        foreach ($presencas as $presenca) {
+            $presenca->total_ativos = $presenca->turma->alunos()->count();
+            $presenca->presentes_dia = PresencaAluno::where('presenca_id', $presenca->id)->where('presente', '1')->count();
+            $presenca->abonadas = PresencaAluno::where('presenca_id', $presenca->id)
+                                ->where(function($q) {
+                                    $q->where('observacao', 'like', '%abonad%')
+                                      ->orWhere('observacao', 'like', '%justif%');
+                                })->count();
+            $presenca->faltantes_dia = max(0, $presenca->total_ativos - $presenca->presentes_dia - $presenca->abonadas);
+            $presenca->com_observacao = PresencaAluno::where('presenca_id', $presenca->id)
+                                        ->whereNotNull('observacao')
+                                        ->where('observacao', '!=', '')
+                                        ->where(function($q) {
+                                            $q->where('observacao', 'not like', '%abonad%')
+                                              ->where('observacao', 'not like', '%justif%');
+                                        })->count();
+        }
 
         return view('estagio.presencas.index', compact('presencas'));
     }
 
     public function create()
     {
-        $turmas = Turma::all();
+        $turmas = Turma::orderBy('nome_turma')->get();
         return view('estagio.presencas.create', compact('turmas'));
     }
 
@@ -39,39 +60,77 @@ class PresencaController extends Controller
         $request->validate([
             'data' => 'required|date',
             'turma_id' => 'required|exists:turmas,id',
+        ], [
+            'data.required' => 'O campo data é obrigatório.',
+            'data.date' => 'O campo data deve ser uma data válida.',
+            'turma_id.required' => 'O campo turma é obrigatório.',
+            'turma_id.exists' => 'A turma selecionada é inválida.',
         ]);
+
+        $existe = Presenca::where('turma_id', $request->turma_id)
+                          ->where('data', $request->data)
+                          ->first();
+
+        if ($existe) {
+            return redirect()->route('presencas.create')
+                             ->withErrors(['data' => 'Já existe um registro de presença para esta turma nesta data.'])
+                             ->withInput();
+        }
 
         $presenca = Presenca::create([
             'data' => $request->data,
             'turma_id' => $request->turma_id,
         ]);
 
-        return redirect()->route('presencas.index')->with('success', 'Presença registrada com sucesso!');
+        return redirect()->route('presencas.register', $presenca->id)->with('success', 'Registro de presença criado! Agora marque os presentes/ausentes.');
+    }
+
+    public function destroy($id)
+    {
+        $presenca = Presenca::findOrFail($id);
+
+        try {
+            DB::beginTransaction();
+
+            PresencaAluno::where('presenca_id', $presenca->id)->delete();
+            PresencaMonitor::where('presenca_id', $presenca->id)->delete();
+            $presenca->forceDelete();
+
+            DB::commit();
+
+            return redirect()->route('presencas.index')->with('success', 'Registro de presença excluído com sucesso!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('presencas.index')->with('error', 'Erro ao excluir o registro de presença.');
+        }
     }
 
     public function registrarPresenca($id)
     {
         $presenca = Presenca::findOrFail($id);
         $turma = $presenca->turma;
-        $alunos = $turma->alunos;
-        $monitores = $turma->monitores;
+        $alunos = $turma->alunos()->orderBy('nome_aluno')->get();
+        $monitores = $turma->monitores()->orderBy('nome_monitor')->get();
+
+        $presencasAlunosExistentes = PresencaAluno::where('presenca_id', $presenca->id)
+                                                ->pluck('presente', 'aluno_id');
+        $observacoesAlunosExistentes = PresencaAluno::where('presenca_id', $presenca->id)
+                                                ->pluck('observacao', 'aluno_id');
+
+        $presencasMonitoresExistentes = PresencaMonitor::where('presenca_id', $presenca->id)
+                                                    ->pluck('presente', 'monitor_id');
+        $observacoesMonitoresExistentes = PresencaMonitor::where('presenca_id', $presenca->id)
+                                                    ->pluck('observacao', 'monitor_id');
 
         foreach ($alunos as $aluno) {
-            $presencaAluno = PresencaAluno::where('presenca_id', $presenca->id)
-                ->where('aluno_id', $aluno->id)
-                ->first();
-
-            $aluno->presente = $presencaAluno ? $presencaAluno->presente : '';
-            $aluno->observacao = $presencaAluno ? $presencaAluno->observacao : '';
+            $aluno->presente = $presencasAlunosExistentes[$aluno->id] ?? '1';
+            $aluno->observacao = $observacoesAlunosExistentes[$aluno->id] ?? '';
         }
 
         foreach ($monitores as $monitor) {
-            $presencaMonitor = PresencaMonitor::where('presenca_id', $presenca->id)
-                ->where('monitor_id', $monitor->id)
-                ->first();
-
-            $monitor->presente = $presencaMonitor ? $presencaMonitor->presente : '';
-            $monitor->observacao = $presencaMonitor ? $presencaMonitor->observacao : '';
+            $monitor->presente = $presencasMonitoresExistentes[$monitor->id] ?? '1';
+            $monitor->observacao = $observacoesMonitoresExistentes[$monitor->id] ?? '';
         }
 
         return view('estagio.presencas.register', compact('presenca', 'alunos', 'monitores'));
@@ -82,69 +141,48 @@ class PresencaController extends Controller
         $presenca = Presenca::findOrFail($id);
 
         $request->validate([
-            'alunos.*.presente' => 'required|in:1,0',
+            'alunos.*.presente' => 'sometimes|required|in:1,0',
             'alunos.*.observacao' => 'nullable|string|max:255',
-            'monitores.*.presente' => 'required|in:1,0',
+            'monitores.*.presente' => 'sometimes|required|in:1,0',
             'monitores.*.observacao' => 'nullable|string|max:255'
-
         ]);
 
-        foreach ($request->alunos as $aluno_id => $dados) {
-            if (!is_array($dados)) {
-                continue;
+        if($request->has('alunos')) {
+            foreach ($request->alunos as $aluno_id => $dados) {
+                if (!is_array($dados) ) {
+                     continue;
+                }
+
+                PresencaAluno::updateOrCreate(
+                    ['presenca_id' => $presenca->id, 'aluno_id' => $aluno_id],
+                    [
+                        'presente' => $dados['presente'] ?? '0',
+                        'observacao' => $dados['observacao'] ?? null
+                    ]
+                );
             }
-
-            PresencaAluno::updateOrCreate(
-                ['presenca_id' => $presenca->id, 'aluno_id' => $aluno_id],
-                ['presente' => $dados['presente'], 'observacao' => $dados['observacao'] ?? null],
-            );
+        } else {
+             PresencaAluno::where('presenca_id', $presenca->id)->delete();
         }
 
-        foreach ($request->monitores as $monitor_id => $dados) {
-            if (!is_array($dados)) {
-                continue;
+        if($request->has('monitores')) {
+            foreach ($request->monitores as $monitor_id => $dados) {
+                 if (!is_array($dados)) {
+                    continue;
+                 }
+
+                PresencaMonitor::updateOrCreate(
+                    ['presenca_id' => $presenca->id, 'monitor_id' => $monitor_id],
+                    [
+                         'presente' => $dados['presente'] ?? '0',
+                         'observacao' => $dados['observacao'] ?? null
+                    ]
+                );
             }
-
-            PresencaMonitor::updateOrCreate(
-                ['presenca_id' => $presenca->id, 'monitor_id' => $monitor_id],
-                ['presente' => $dados['presente'], 'observacao' => $dados['observacao'] ?? null,]
-            );
+        } else {
+             PresencaMonitor::where('presenca_id', $presenca->id)->delete();
         }
 
-        return redirect()->route('presencas.index')->with('success', 'Presença registrada com sucesso.');
-    }
-
-    public function visualizarPresenca($id)
-    {
-        $presenca = Presenca::findOrFail($id);
-        $turma = $presenca->turma;
-        $alunos = $turma->alunos;
-        $monitores = $turma->monitores;
-
-        foreach ($alunos as $aluno) {
-            $presencaAluno = PresencaAluno::where('presenca_id', $presenca->id)
-                ->where('aluno_id', $aluno->id)
-                ->first();
-
-            $aluno->presente = $presencaAluno ? $presencaAluno->presente : '';
-            $aluno->observacao = $presencaAluno ? $presencaAluno->observacao : '';
-        }
-
-        foreach ($monitores as $monitor) {
-            $presencaMonitor = PresencaMonitor::where('presenca_id', $presenca->id)
-                ->where('monitor_id', $monitor->id)
-                ->first();
-
-            $monitor->presente = $presencaMonitor ? $presencaMonitor->presente : '';
-            $monitor->observacao = $presencaMonitor ? $presencaMonitor->observacao : '';
-        }
-
-        return view('estagio.presencas.visualizar', compact('presenca', 'alunos', 'monitores'));
-    }
-
-    public function exportar($id)
-    {
-        $presenca = Presenca::findOrFail($id);
-        return Excel::download(new PresencaExport($presenca), "Presenca_{$presenca->turma->nome_turma}_{$presenca->data}.CSV", \Maatwebsite\Excel\Excel::CSV);
+        return redirect()->route('presencas.index')->with('success', 'Presença salva com sucesso.');
     }
 }
