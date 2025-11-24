@@ -37,7 +37,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Dados do backend
     const dados = {
         geral: {
             labels: ['Média Geral'],
@@ -75,26 +74,24 @@
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100 // Definindo o máximo do eixo Y para 100
+                    max: 100 
                 }
             }
         };
 
         meuGrafico = new Chart(ctx, {
-            type: 'bar', // Todos os gráficos agora são de barra
+            type: 'bar', 
             data: chartData,
             options: chartOptions
         });
     }
 
-    // Event listener para a seleção dos dados (geral, turma, aluno)
     const graficoSelect = document.getElementById('graficoSelect');
     const filtroTurma = document.getElementById('filtroTurma');
 
     graficoSelect.addEventListener('change', function() {
         const selectedValue = this.value;
         
-        // Controla a exibição do filtro de turma
         if (selectedValue === 'aluno') {
             filtroTurma.classList.remove('d-none');
         } else {
@@ -104,7 +101,6 @@
         renderizarGrafico(selectedValue);
     });
 
-    // Inicializa o gráfico ao carregar a página
     window.addEventListener('load', function() {
         const initialTipoDados = '{{ request("tipo_grafico", "geral") }}';
         renderizarGrafico(initialTipoDados);

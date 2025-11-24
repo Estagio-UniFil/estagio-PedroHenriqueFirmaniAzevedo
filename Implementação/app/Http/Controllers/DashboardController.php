@@ -62,16 +62,16 @@ class DashboardController extends Controller
         }
 
         if ($filtroSituacao === 'ativos') {
-            $queryAlunos->whereNull('deleted_at');
+            $queryAlunos->whereNull('alunos.deleted_at'); 
         } elseif ($filtroSituacao === 'inativos') {
             $queryAlunos->onlyTrashed();
         }
 
         $alunosFaltososIds = [];
         if ($filtroSituacao === 'faltosos') {
-            $queryAlunos->whereNull('deleted_at');
+            $queryAlunos->whereNull('alunos.deleted_at'); 
             $alunosFaltososIds = $this->getAlunosFaltososIds($turmaSelecionadaId);
-            $queryAlunos->whereIn('id', $alunosFaltososIds);
+            $queryAlunos->whereIn('alunos.id', $alunosFaltososIds);
         }
 
         $queryAlunos->join('turmas', 'alunos.turma_id', '=', 'turmas.id')
@@ -141,7 +141,7 @@ class DashboardController extends Controller
                                 ->where('presenca_alunos.aluno_id', $alunoId)
                                 ->where('presencas.turma_id', $turmaId)
                                 ->where(function($q) {
-                                    $q->where('presenca_alunos.presente', '1')
+                                    $q->where('presenca_alunos.presente', 1) 
                                       ->orWhere('presenca_alunos.observacao', 'like', '%abonada%');
                                 });
 

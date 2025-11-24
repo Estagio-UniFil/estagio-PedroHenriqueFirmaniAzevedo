@@ -11,30 +11,38 @@
                     <h1>Minhas Notas</h1>
                     <div class="h5">
                         <strong>Média:</strong>
+                        
                         @php
                             $somaNotasPonderadas = 0;
                             $somaPesos = 0;
-                        @endphp
+                            $atividadesComNota = 0;
+                            $somaNotasSimples = 0; 
 
-                        @foreach ($atividades as $atividade)
-                            @php
+                            foreach ($atividades as $atividade) {
                                 $nota = optional($atividade->notas->first())->nota;
-                                $peso = $atividade->peso; // agora o peso vem direto da atividade
+                                $peso = $atividade->peso;
 
-                                if (is_numeric($nota) && is_numeric($peso) && $peso > 0) {
+                                if (is_numeric($nota) && is_numeric($peso)) {
                                     $somaNotasPonderadas += $nota * $peso;
                                     $somaPesos += $peso;
-                                } elseif (is_numeric($nota) && $peso == 0) {
-                                    $somaNotasPonderadas += $nota;
-                                }
-                            @endphp
-                        @endforeach
 
-                        @php
-                            $mediaPonderada = $somaPesos > 0 
-                                ? $somaNotasPonderadas / $somaPesos 
-                                : (count($atividades) > 0 ? $somaNotasPonderadas / count($atividades) : null);
+                                    $somaNotasSimples += $nota;
+                                    $atividadesComNota++;
+                                }
+                            }
+
+                            $mediaPonderada = null;
+
+                            if ($somaPesos > 0) {
+                                $mediaPonderada = $somaNotasPonderadas / $somaPesos;
+                            } elseif ($atividadesComNota > 0) {
+
+                                $mediaPonderada = $somaNotasSimples / $atividadesComNota;
+                            } else {
+                                $mediaPonderada = 0; 
+                            }
                         @endphp
+
 
                         @if (!is_null($mediaPonderada))
                             {{ number_format($mediaPonderada, 2) }}

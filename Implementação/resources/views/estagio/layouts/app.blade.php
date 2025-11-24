@@ -197,8 +197,6 @@
         <hr>
         <a href="{{ route('atividades.index') }}" class="{{ request()->routeIs('atividades.*') ? 'active' : '' }}">Atividades</a>
         <hr>
-        <a href="{{ route('import.export') }}" class="{{ request()->routeIs('import.export') ? 'active' : '' }}">Importar/Exportar</a>
-        <hr>
         <a href="{{ route('graficos.index') }}" class="{{ request()->routeIs('graficos.*') ? 'active' : '' }}">Gráficos</a>
         <hr>
         @endif

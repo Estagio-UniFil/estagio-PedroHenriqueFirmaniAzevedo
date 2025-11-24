@@ -30,7 +30,12 @@ class PresencaController extends Controller
 
         foreach ($presencas as $presenca) {
             $presenca->total_ativos = $presenca->turma->alunos()->count();
-            $presenca->presentes_dia = PresencaAluno::where('presenca_id', $presenca->id)->where('presente', '1')->count();
+            
+            // CORREÇÃO: Garantir comparação com inteiro 1 para contagem precisa
+            $presenca->presentes_dia = PresencaAluno::where('presenca_id', $presenca->id)
+                                                    ->where('presente', 1)
+                                                    ->count();
+                                                    
             $presenca->abonadas = PresencaAluno::where('presenca_id', $presenca->id)
                                 ->where(function($q) {
                                     $q->where('observacao', 'like', '%abonad%')
@@ -124,12 +129,14 @@ class PresencaController extends Controller
                                                     ->pluck('observacao', 'monitor_id');
 
         foreach ($alunos as $aluno) {
-            $aluno->presente = $presencasAlunosExistentes[$aluno->id] ?? '1';
+            // Se não existir registro, assume '1' (Presente) por padrão, ou '0' se preferir que comece vazio.
+            // Mantive '1' pois é mais comum a maioria estar presente.
+            $aluno->presente = $presencasAlunosExistentes[$aluno->id] ?? 1; 
             $aluno->observacao = $observacoesAlunosExistentes[$aluno->id] ?? '';
         }
 
         foreach ($monitores as $monitor) {
-            $monitor->presente = $presencasMonitoresExistentes[$monitor->id] ?? '1';
+            $monitor->presente = $presencasMonitoresExistentes[$monitor->id] ?? 1;
             $monitor->observacao = $observacoesMonitoresExistentes[$monitor->id] ?? '';
         }
 
@@ -140,10 +147,11 @@ class PresencaController extends Controller
     {
         $presenca = Presenca::findOrFail($id);
 
+        // Validação ajustada para aceitar 0 ou 1 (booleanos do checkbox)
         $request->validate([
-            'alunos.*.presente' => 'sometimes|required|in:1,0',
+            'alunos.*.presente' => 'sometimes|required|in:1,0,on', 
             'alunos.*.observacao' => 'nullable|string|max:255',
-            'monitores.*.presente' => 'sometimes|required|in:1,0',
+            'monitores.*.presente' => 'sometimes|required|in:1,0,on',
             'monitores.*.observacao' => 'nullable|string|max:255'
         ]);
 
@@ -153,16 +161,18 @@ class PresencaController extends Controller
                      continue;
                 }
 
+                $isPresente = isset($dados['presente']) && ($dados['presente'] == '1' || $dados['presente'] == 'on') ? 1 : 0;
+
                 PresencaAluno::updateOrCreate(
                     ['presenca_id' => $presenca->id, 'aluno_id' => $aluno_id],
                     [
-                        'presente' => $dados['presente'] ?? '0',
+                        'presente' => $isPresente,
                         'observacao' => $dados['observacao'] ?? null
                     ]
                 );
             }
         } else {
-             PresencaAluno::where('presenca_id', $presenca->id)->delete();
+
         }
 
         if($request->has('monitores')) {
@@ -171,17 +181,17 @@ class PresencaController extends Controller
                     continue;
                  }
 
+                $isPresente = isset($dados['presente']) && ($dados['presente'] == '1' || $dados['presente'] == 'on') ? 1 : 0;
+
                 PresencaMonitor::updateOrCreate(
                     ['presenca_id' => $presenca->id, 'monitor_id' => $monitor_id],
                     [
-                         'presente' => $dados['presente'] ?? '0',
+                         'presente' => $isPresente,
                          'observacao' => $dados['observacao'] ?? null
                     ]
                 );
             }
-        } else {
-             PresencaMonitor::where('presenca_id', $presenca->id)->delete();
-        }
+        } 
 
         return redirect()->route('presencas.index')->with('success', 'Presença salva com sucesso.');
     }

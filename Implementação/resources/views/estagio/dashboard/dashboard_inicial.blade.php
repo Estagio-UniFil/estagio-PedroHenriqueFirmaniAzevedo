@@ -153,7 +153,7 @@
                             </thead>
                             <tbody>
                                 @foreach($alunosPaginados as $aluno)
-                                <tr class="{{ $aluno->faltou_ultimas_3 ? 'table-danger' : '' }}">
+                                <tr>
                                     <td>{{ $aluno->id }}</td>
                                     <td>{{ strtoupper($aluno->nome_aluno) }}</td>
                                     <td>{{ $aluno->user->email ?? 'N/A' }}</td>
